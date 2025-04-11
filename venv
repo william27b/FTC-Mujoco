@@ -1,0 +1,7 @@
+<script>start("/Users/william/Desktop/mujoco_test/venv/");</script>
+<script>onHasParentDirectory();</script>
+<script>addRow("bin","bin",1,736,"736 B",1743657135,"4/2/25, 10:12:15 PM");</script>
+<script>addRow("include","include",1,96,"96 B",1743558380,"4/1/25, 6:46:20 PM");</script>
+<script>addRow("lib","lib",1,96,"96 B",1743558380,"4/1/25, 6:46:20 PM");</script>
+<script>addRow("share","share",1,96,"96 B",1743657118,"4/2/25, 10:11:58 PM");</script>
+<script>addRow("pyvenv.cfg","pyvenv.cfg",0,316,"316 B",1743558380,"4/1/25, 6:46:20 PM");</script>
