@@ -5,3 +5,4 @@ MUJOCO_LOG.TXT
 .vscode*
 MUJOCO_LOG.TXT
 .DS_Store
+model
