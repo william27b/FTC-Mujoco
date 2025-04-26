@@ -6,41 +6,44 @@
     </visual>
 
     <worldbody>
-
-        <!-- <camera pos="257.769 325.263 279.612"
-            xyaxes="-0.679 0.735 -0.000 -0.461 -0.425 0.779" /> -->
-
-
         <geom type="plane" size="144 144 0.1" rgba="0.6 0.6 0.6 1" />
+
+        <!-- X coordinate label -->
+        <geom name="X1" type="plane" pos="120 0 0.5" euler="0 0 30" size="5 1 0.1" rgba="0 0 0 1"
+            conaffinity="0" contype="0" />
+        <geom name="X2" type="plane" pos="120 0 0.5" euler="0 0 150" size="5 1 0.1" rgba="0 0 0 1"
+            conaffinity="0" contype="0" />
+
+        <!-- Y coordinate label -->
+        <geom name="Y1" type="plane" pos="0 120 0.5" euler="0 0 90" size="3 1 0.1" rgba="0 0 0 1"
+            conaffinity="0" contype="0" />
+        <geom name="Y2" type="plane" pos="-1 125 0.5" euler="0 0 120" size="3 1 0.1" rgba="0 0 0 1"
+            conaffinity="0" contype="0" />
+        <geom name="Y3" type="plane" pos="1 125 0.5" euler="0 0 60" size="3 1 0.1" rgba="0 0 0 1"
+            conaffinity="0" contype="0" />
 
 
         <body euler="0 0 0" pos="0 70 3.2" name="robot">
             <geom name="robotbox" type="box" rgba="0 0 0 1" size="14 14 3.2" conaffinity="1"
                 contype="1" />
-            <!-- <geom name="forward" type="cylinder" rgba="0 1 0 1" size="0.5 10 0.5" pos="0 -24 0"
+
+            <geom name="forward" type="cylinder" rgba="0 1 0 1" size="0.5 10 0.5" pos="0 24 0"
                 euler="90 0 0" contype="0" conaffinity="0" />
-            <geom name="backward" type="cylinder" rgba="0 1 0 1" size="0.5 10 0.5" pos="0 24 0"
+            <geom name="right" type="cylinder" rgba="0 1 0 1" size="0.5 10 0.5" pos="24 0 0"
+                euler="0 90 0" contype="0" conaffinity="0" />
+            <geom name="backward" type="cylinder" rgba="0 1 0 1" size="0.5 10 0.5" pos="0 -24 0"
                 euler="90 0 0" contype="0" conaffinity="0" />
             <geom name="left" type="cylinder" rgba="0 1 0 1" size="0.5 10 0.5" pos="-24 0 0"
                 euler="0 90 0" contype="0" conaffinity="0" />
-            <geom name="right" type="cylinder" rgba="0 1 0 1" size="0.5 10 0.5" pos="24 0 0"
-                euler="0 90 0" contype="0" conaffinity="0" /> -->
+
             <joint type="free" name="robotfree" />
         </body>
 
-        <!-- <body euler="0 0 0" pos="70 0 3.2" name="hater"> -->
-        <!-- <geom name="haterbox" type="box" rgba="0.5 0 0 1" size="14 14 3.2" conaffinity="1"
-                contype="1" /> -->
-        <!-- <geom name="forward" type="cylinder" rgba="0 1 0 1" size="0.5 10 0.5" pos="0 -24 0"
-                euler="90 0 0" contype="0" conaffinity="0" />
-            <geom name="backward" type="cylinder" rgba="0 1 0 1" size="0.5 10 0.5" pos="0 24 0"
-                euler="90 0 0" contype="0" conaffinity="0" />
-            <geom name="left" type="cylinder" rgba="0 1 0 1" size="0.5 10 0.5" pos="-24 0 0"
-                euler="0 90 0" contype="0" conaffinity="0" />
-            <geom name="right" type="cylinder" rgba="0 1 0 1" size="0.5 10 0.5" pos="24 0 0"
-                euler="0 90 0" contype="0" conaffinity="0" /> -->
-        <!-- <joint type="free" name="haterfree" /> -->
-        <!-- </body> -->
+        <!-- <body euler="0 0 0" pos="70 0 3.2" name="hater">
+            <geom name="haterbox" type="box" rgba="0.5 0 0 1" size="14 14 3.2" conaffinity="1"
+                contype="1" />
+            <joint type="free" name="haterfree" />
+        </body> -->
 
         <body>
             <geom type="sphere" pos="0 70 0" rgba="0.0 0.6 0.0 1" size="3 3 3" contype="0"
@@ -101,6 +104,15 @@
                 size="1 29.5 1" />
             <geom type="box" euler="0 0 90" pos="0 -47.5 35.08" rgba="0.7 0.7 0.7 1"
                 size="1 29.5 1" />
+
+            <geom type="box" euler="0 60 90" pos="40 47.5 -20" rgba="0.7 0.7 0.7 1"
+                size="1.125 20 1.38" />
+            <geom type="box" euler="0 -60 90" pos="-40 47.5 -20" rgba="0.7 0.7 0.7 1"
+                size="1.125 20 1.38" />
+            <geom type="box" euler="0 60 90" pos="40 -47.5 -20" rgba="0.7 0.7 0.7 1"
+                size="1.125 20 1.38" />
+            <geom type="box" euler="0 -60 90" pos="-40 -47.5 -20" rgba="0.7 0.7 0.7 1"
+                size="1.125 20 1.38" />
         </body>
 
         <body name="wall">

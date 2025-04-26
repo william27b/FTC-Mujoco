@@ -2,20 +2,23 @@ import numpy as np
 import mujoco
 import torch
 
-from scipy.spatial.transform import Rotation as R
+from scipy.spatial.transform import Rotation as R # type: ignore
 
 class Robot():
-    def __init__(self, model, data):
+    def __init__(self, model, data, visualize):
         self.model = model
         self.data = data
 
         self.robot_qpos_addr = self.model.joint('robotfree').qposadr[0]
-        # self.physicalRays = [
-        #     self.model.geom('forward'),
-        #     self.model.geom('right'),
-        #     self.model.geom('backward'),
-        #     self.model.geom('left'),
-        # ]
+
+        self.visualize = visualize
+        if self.visualize:
+            self.physicalRays = [
+                self.model.geom('forward'),
+                self.model.geom('right'),
+                self.model.geom('backward'),
+                self.model.geom('left'),
+            ]
 
     def getRay(self, origin, direction):
         # Optional: geomgroup can be None (or a 6x1 uint8 array mask)
@@ -45,9 +48,9 @@ class Robot():
 
     def getDistances(self):
         origin = self.getPosition() + np.array([0, 0, 3.5])
-        forwardDirection =   np.array([[0.0], [-1.0], [0.0]])
+        forwardDirection =   np.array([[0.0], [1.0], [0.0]])
         rightDirection =     np.array([[1.0], [0.0], [0.0]])
-        backwardsDirection = np.array([[0.0], [1.0], [0.0]])
+        backwardsDirection = np.array([[0.0], [-1.0], [0.0]])
         leftDirection =      np.array([[-1.0], [0.0], [0.0]])
 
         return [
@@ -59,34 +62,38 @@ class Robot():
     
     def alterPhysicalRays(self, distances):
         forwardDistance, forwardRay = max(distances[0][0], 0), self.physicalRays[0]
-        forwardRay.size[1] = forwardDistance
-        forwardRay.pos[1] = -14 - forwardDistance
+        forwardRay.size[1] = forwardDistance / 2
+        forwardRay.pos[1] = 14 + forwardDistance / 2
 
         rightDistance, rightRay = max(distances[1][0], 0), self.physicalRays[1]
-        rightRay.size[1] = rightDistance
-        rightRay.pos[0] = 14 + rightDistance
+        rightRay.size[1] = rightDistance / 2
+        rightRay.pos[0] = 14 + rightDistance / 2
 
         backwardDistance, backwardRay = max(distances[2][0], 0), self.physicalRays[2]
-        backwardRay.size[1] = backwardDistance
-        backwardRay.pos[1] = 14 + backwardDistance
+        backwardRay.size[1] = backwardDistance / 2
+        backwardRay.pos[1] = -14 - backwardDistance / 2
 
         leftDistance, leftRay = max(distances[3][0], 0), self.physicalRays[3]
-        leftRay.size[1] = leftDistance
-        leftRay.pos[0] = -14 - leftDistance
+        leftRay.size[1] = leftDistance / 2
+        leftRay.pos[0] = -14 - leftDistance / 2
     
     def getState(self, deltaPosition):
         state = deltaPosition
 
         distances = self.getDistances()
-        # self.alterPhysicalRays(distances)
+        if self.visualize:
+            self.alterPhysicalRays(distances)
 
         for distance in distances:
             if distance[1] != -1:
-                state.append(min(1 / max(distance[0], 1e-6), 500))
+                state.append(min(1 / max(distance[0], 1e-6), 100))
+                # state.append(0.0)
                 continue
 
             state.append(0.0)
 
+        # state.extend(self.getVelocity())
+        state.extend([0, 0])
         state = torch.Tensor(state)
         return state
 
@@ -94,7 +101,7 @@ class Robot():
         return self.data.qpos[self.robot_qpos_addr: self.robot_qpos_addr+3]
 
     def getVelocity(self):
-        return self.data.qvel[self.robot_qpos_addr: self.robot_qpos_addr+3]
+        return self.data.qvel[self.robot_qpos_addr: self.robot_qpos_addr+2]
 
     def setPosition(self, x, y):
         self.data.qpos[self.robot_qpos_addr    ] = x  # x-axis position

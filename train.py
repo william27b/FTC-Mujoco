@@ -14,29 +14,66 @@ import os
 
 MODEL_PATH = 'model'
 
-def getModel():
-  model = Model(6, 2)
+def getModel(hyperparameters):
+  model = Model(
+    hyperparameters["inputSize"],
+    hyperparameters["outputSize"],
+    hyperparameters["learningRate"],
+  )
+
   if os.path.exists(MODEL_PATH):
     model.load_state_dict(torch.load(MODEL_PATH, weights_only=True))
   return model
 
-def runTrainingLoop(xml, model, hyperparams, episodes=500, max_time=5):
+def randomizePosition(robot, m):
+  x, y = (np.random.rand() - 0.5) * 288, (np.random.rand() - 0.5) * 288
+  m.geom('start').pos = (x, y, 0)
+  m.geom('end').pos = ((np.random.rand() - 0.5) * 288, (np.random.rand() - 0.5) * 288, 0)
+
+  robot.setPosition(x, y)
+
+def runTrainingLoop(xml, hyperparameters, episodes=10000, save_frequency=100, max_time=5):
   try:
+    model = getModel(hyperparameters)
+
     m = mujoco.MjModel.from_xml_path(xml)
     d = mujoco.MjData(m)
 
-    target = m.geom('end').pos
-    robot = Robot(m, d)
+    if not hyperparameters["visualize"]:
+      # hide rays
+      m.geom('forward').rgba[3] = 0.0
+      m.geom('right').rgba[3] = 0.0
+      m.geom('backward').rgba[3] = 0.0
+      m.geom('left').rgba[3] = 0.0
+
+
+    if not hyperparameters["visualizeXY"]:
+      # hide XY plane indicators
+      m.geom('X1').rgba[3] = 0.0
+      m.geom('X2').rgba[3] = 0.0
+
+      m.geom('Y1').rgba[3] = 0.0
+      m.geom('Y2').rgba[3] = 0.0
+      m.geom('Y3').rgba[3] = 0.0
+
+
+    robot = Robot(m, d, hyperparameters["visualize"])
 
     with mujoco.viewer.launch_passive(m, d) as viewer:
-      for _ in range(episodes):
+      for i in range(episodes):
+        if i % save_frequency == 0:
+          torch.save(model.state_dict(), 'model')
+
         # Access the camera object
         cam = viewer.cam
 
-        cam.azimuth = 223
-        cam.elevation = -40
+        cam.azimuth = 0
+        cam.elevation = -90
         cam.distance = 600
-        cam.lookat[:] = [0, 70, 3.2]  # what the camera is looking at
+        cam.lookat[:] = [0, 0, 0]  # what the camera is looking at
+
+        randomizePosition(robot, m)
+        target = m.geom('end').pos
 
         start = time.time()
 
@@ -75,7 +112,7 @@ def runTrainingLoop(xml, model, hyperparams, episodes=500, max_time=5):
           if time_until_next_step > 0:
             time.sleep(time_until_next_step)
 
-          if torch.norm(state[:2]) < 0.5 / 144.0: break
+          if torch.norm(state[:2]) < 0.5: break
         
         mujoco.mj_resetData(m, d)
       
@@ -86,4 +123,12 @@ def runTrainingLoop(xml, model, hyperparams, episodes=500, max_time=5):
   torch.save(model.state_dict(), 'model')
 
 if __name__ == "__main__":
-  runTrainingLoop("model.xml", getModel(), {})
+  hyperparameters = {
+    "inputSize": 8,
+    "outputSize": 2,
+    "learningRate": 1.0,
+    "visualize": False,
+    "visualizeXY": False
+  }
+
+  runTrainingLoop("model.xml", hyperparameters)

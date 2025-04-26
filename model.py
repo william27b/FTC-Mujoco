@@ -3,11 +3,13 @@ from torch import nn
 import numpy as np
 
 class Model(nn.Module):
-    def __init__(self, input_dim, output_dim, learning_rate=1):
+    def __init__(self, input_dim, output_dim, learning_rate):
         super().__init__()
 
         self.linear1 = nn.Linear(input_dim,  output_dim, bias=False)
-        self.std = 1e-1
+        nn.init.orthogonal_(self.linear1.weight, gain=10.0)
+
+        self.std = 1e-3
 
         self.output_dim = output_dim
 
@@ -38,33 +40,16 @@ class Model(nn.Module):
         return log_prob
 
     def train(self, records):
+        if len(records) == 0: return
+
         self.optim.zero_grad()
-        totalLoss = 0.0
         for state, out, loss in records:
-            # print(loss)
             log_prob = self.getDistributionData(state, out)
-            # print(loss, log_prob.sum())
-            policyLoss = loss * log_prob.sum()
-            # policyLoss = loss * log_prob.sum() / len(records)
-            # policyLoss = policyLoss + 0.01 * std.sum()
-            totalLoss += policyLoss
-            # print(entropy)
-            # policyLoss = 1 * entropy
-            # print(policyLoss)
+
+            policyLoss = loss * log_prob.sum() / len(records)
             policyLoss.backward()
 
-        # torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=1.0)
-
-        for name, param in self.named_parameters():
-            if param.grad is not None:
-                print(f"{name}: grad norm = {param.grad.norm().item()}")
-            else:
-                print(f"{name}: NO GRAD")
-
-            if param.data is not None:
-                print(f"{name}: data = {param.data}")
-            else:
-                print(f"{name}: NO VALUES")
+        torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=50.0)
 
         self.optim.step()
 
@@ -79,7 +64,6 @@ class Model(nn.Module):
             else:
                 print(f"{name}: NO VALUES")
 
-        print("avg loss", totalLoss / len(records))
         print()
 
     def getLoss(self, state, out):
@@ -97,4 +81,6 @@ class Model(nn.Module):
         """
             loss
         """
-        return torch.sum((state[:2] * 3 * 144 - out) ** 2) + 20000 * ( -state[2] * out[1] +state[3] * out[0] +state[4] * out[1] -state[5] * out[0] )
+
+        #                                                            forward distance * y movement  right distance * x movement  backward distance * -y movement  left distance * -x movement
+        return 100 * torch.sum((state[:2] - out / (3 * 144)) ** 2) + (state[2] * out[1] * 1.0)    + (state[3] * out[0] * 1.0)   + (state[4] * out[1] * -1.0)   +  (state[5] * out[0] * -1.0)
