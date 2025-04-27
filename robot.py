@@ -86,14 +86,21 @@ class Robot():
 
         for distance in distances:
             if distance[1] != -1:
-                state.append(min(1 / max(distance[0], 1e-6), 100))
+                # maximum acceleration parameter, 1 is 100% or 144 inches
+                # if the robot is 10 inches from a wall, accelerate in at
+                max_accel = 5.0 / 144
+
+                state.append(min(max(1 / distance[0], -max_accel), max_accel))
                 # state.append(0.0)
                 continue
 
             state.append(0.0)
 
-        # state.extend(self.getVelocity())
-        state.extend([0, 0])
+        velocity = self.getVelocity()
+        velocity[0] = velocity[0] / 100
+        velocity[1] = velocity[1] / 100
+        state.extend(velocity)
+        # state.extend([0, 0])
         state = torch.Tensor(state)
         return state
 
@@ -102,6 +109,9 @@ class Robot():
 
     def getVelocity(self):
         return self.data.qvel[self.robot_qpos_addr: self.robot_qpos_addr+2]
+    
+    def getAcceleration(self):
+        return self.data.qacc[self.robot_qpos_addr: self.robot_qpos_addr+2]
 
     def setPosition(self, x, y):
         self.data.qpos[self.robot_qpos_addr    ] = x  # x-axis position
