@@ -11,6 +11,15 @@ class Robot():
 
         self.robot_qpos_addr = self.model.joint('robotfree').qposadr[0]
 
+        self.predictedDistances = [
+            0,
+            0,
+            0,
+            0
+        ]
+
+        self.alpha = 0.994
+
         self.visualize = visualize
         if self.visualize:
             self.physicalRays = [
@@ -19,6 +28,14 @@ class Robot():
                 self.model.geom('backward'),
                 self.model.geom('left'),
             ]
+
+    def updatePredictedDistances(self, distances, fps=120):
+        self.predictedDistances = [
+            min(self.predictedDistances[i] * self.alpha +
+            distances[i] * (1 - self.alpha),
+            distances[i])
+            for i in range(len(distances))
+        ]
 
     def getRay(self, origin, direction):
         # Optional: geomgroup can be None (or a 6x1 uint8 array mask)
@@ -81,26 +98,29 @@ class Robot():
         state = deltaPosition
 
         distances = self.getDistances()
+        realDistances = [0] * len(distances)
+
         if self.visualize:
-            self.alterPhysicalRays(distances)
+            self.alterPhysicalRays(realDistances)
 
-        for distance in distances:
+        for i, distance in enumerate(distances):
             if distance[1] != -1:
-                # maximum acceleration parameter, 1 is 100% or 144 inches
-                # if the robot is 10 inches from a wall, accelerate in at
-                max_accel = 5.0 / 144
+                realDistances[i] = distance[0]
+        
+        self.updatePredictedDistances(realDistances)
 
-                state.append(min(max(1 / distance[0], -max_accel), max_accel))
-                # state.append(0.0)
-                continue
+        for distance in self.predictedDistances:
+            # maximum acceleration parameter, 1 is 100% or 144 inches
+            # if the robot is 10 inches from a wall, accelerate in at
+            max_accel = 144.0 / 144
 
-            state.append(0.0)
+            state.append(min(max(1 / max(distance, 1e-6), -max_accel), max_accel))
 
         velocity = self.getVelocity()
         velocity[0] = velocity[0] / 100
         velocity[1] = velocity[1] / 100
-        state.extend(velocity)
-        # state.extend([0, 0])
+        # state.extend(velocity)
+        state.extend([0, 0])
         state = torch.Tensor(state)
         return state
 

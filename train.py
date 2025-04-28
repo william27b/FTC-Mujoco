@@ -38,7 +38,7 @@ def getModel(hyperparameters):
   )
 
   if os.path.exists(MODEL_PATH):
-    model.load_state_dict(torch.load(MODEL_PATH, weights_only=True))
+    model.load_state_dict(torch.load(MODEL_PATH, weights_only=False))
   return model
 
 def randomizePosition(robot, m):
@@ -63,6 +63,7 @@ def runTrainingLoop(xml, hyperparameters, episodes=10000, save_frequency=100, ma
     model = getModel(hyperparameters)
 
     m = mujoco.MjModel.from_xml_path(xml)
+    m.opt.timestep = 1 / hyperparameters["fps"]
     max_steps = max_time / m.opt.timestep
     d = mujoco.MjData(m)
 
@@ -91,7 +92,7 @@ def runTrainingLoop(xml, hyperparameters, episodes=10000, save_frequency=100, ma
         # Access the camera object
         cam = viewer.cam
 
-        cam.azimuth = 0
+        cam.azimuth = 90
         cam.elevation = -90
         cam.distance = 600
         cam.lookat[:] = [0, 0, 0]  # what the camera is looking at
@@ -127,10 +128,9 @@ def runTrainingLoop(xml, hyperparameters, episodes=10000, save_frequency=100, ma
           state = robot.getState(deltaPosition)
           
           out = model.forward(state)
-          out = torch.clamp(out, -100, 100)
           records.append((state, out, model.getLoss(state, out)))
 
-          dx, dy = out
+          dx, dy = torch.clamp(out, -3*144, 3*144)
           robot.setVelocity(dx, dy, 0)
           # print(robot.getDistances())
 
@@ -164,10 +164,11 @@ if __name__ == "__main__":
   hyperparameters = {
     "inputSize": 8,
     "outputSize": 2,
-    "learningRate": 0.01,
+    "learningRate": 0.2,
     "visualize": False,
-    "visualizeXY": True,
-    "render": True
+    "visualizeXY": False,
+    "render": True,
+    "fps": 100
   }
 
   runTrainingLoop("model.xml", hyperparameters, episodes=10_000)
