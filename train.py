@@ -107,13 +107,24 @@ def runTrainingLoop(xml, hyperparameters, episodes=10000, save_frequency=100, ma
           torch.save(model.state_dict(), 'model')
 
         randomizePosition(robot, m)
+        # mujoco.mj_step(m, d)
+        # if robot.hasCollision():
+          # continue
+
         target = m.geom('end').pos
 
         start = time.time()
 
-        records = []
+        records = [
+          (torch.zeros((6)), None, None),
+          (torch.zeros((6)), None, None),
+        ]
+
+        states = torch.Tensor()
 
         ep_steps = 0
+        isColliding = False
+        collisionDirection = [0, 0]
         while (not viewer or viewer.is_running()) and ep_steps < max_steps and time.time() - start < max_time:
           ep_steps += 1
 
@@ -126,10 +137,18 @@ def runTrainingLoop(xml, hyperparameters, episodes=10000, save_frequency=100, ma
           deltaPosition = [(target[0] - robot.getPosition()[0]) / 144, (target[1] - robot.getPosition()[1]) / 144]
           # deltaPosition = [0, 0]
           state = robot.getState(deltaPosition)
-          
-          out = model.forward(state)
-          records.append((state, out, model.getLoss(state, out)))
+          states = torch.cat((states, state.view((1, 1, -1))))
 
+          out = model.forwardAction(states)
+          # print(out.shape)
+          # print(out)
+          out = out[0, -1].reshape((2,))
+
+          # print(out)
+
+          records.append([state, out, model.getLoss(state, out, collisionDirection)])
+
+          
           dx, dy = torch.clamp(out, -3*144, 3*144)
           robot.setVelocity(dx, dy, 0)
           # print(robot.getDistances())
@@ -141,6 +160,11 @@ def runTrainingLoop(xml, hyperparameters, episodes=10000, save_frequency=100, ma
             viewer.sync()
 
           if robot.hasCollision():
+            collisionDirection = [np.sign(dx.item()), np.sign(dy.item())]
+
+            for record in records[2:]:
+              record[2] = model.getLoss(record[0], record[1], collisionDirection)
+
             # time.sleep(5)
             break
 
@@ -153,7 +177,7 @@ def runTrainingLoop(xml, hyperparameters, episodes=10000, save_frequency=100, ma
         
         mujoco.mj_resetData(m, d)
 
-        print(len(records))
+        # print(len(records))
         model.train(records)
 
   except KeyboardInterrupt:
@@ -162,13 +186,13 @@ def runTrainingLoop(xml, hyperparameters, episodes=10000, save_frequency=100, ma
 
 if __name__ == "__main__":
   hyperparameters = {
-    "inputSize": 8,
+    "inputSize": 6,
     "outputSize": 2,
-    "learningRate": 0.2,
+    "learningRate": 0.1,
     "visualize": False,
     "visualizeXY": False,
     "render": True,
-    "fps": 100
+    "fps": 10
   }
 
   runTrainingLoop("model.xml", hyperparameters, episodes=10_000)

@@ -18,7 +18,7 @@ class Robot():
             0
         ]
 
-        self.alpha = 0.994
+        self.alpha = 0.91
 
         self.visualize = visualize
         if self.visualize:
@@ -101,7 +101,7 @@ class Robot():
         realDistances = [0] * len(distances)
 
         if self.visualize:
-            self.alterPhysicalRays(realDistances)
+            self.alterPhysicalRays(distances)
 
         for i, distance in enumerate(distances):
             if distance[1] != -1:
@@ -112,16 +112,23 @@ class Robot():
         for distance in self.predictedDistances:
             # maximum acceleration parameter, 1 is 100% or 144 inches
             # if the robot is 10 inches from a wall, accelerate in at
-            max_accel = 144.0 / 144
+            max_accel = 4.0 / 144
 
-            state.append(min(max(1 / max(distance, 1e-6), -max_accel), max_accel))
+            optimalDistance = 30
+            distance = distance - optimalDistance
 
-        velocity = self.getVelocity()
-        velocity[0] = velocity[0] / 100
-        velocity[1] = velocity[1] / 100
+            # state.append(min(max(1 / max(distance, 1e-6), -max_accel), max_accel))
+            state.append(2 * max_accel * distance / ((distance * distance) + 1))
+
+        # removed velocity part of state
+        # velocity = self.getVelocity()
+        # velocity[0] = velocity[0] / 100
+        # velocity[1] = velocity[1] / 100
         # state.extend(velocity)
-        state.extend([0, 0])
+
+        # state.extend([0, 0])
         state = torch.Tensor(state)
+        # print(state.shape)
         return state
 
     def getPosition(self):
